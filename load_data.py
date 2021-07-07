@@ -13,13 +13,15 @@ from torch.utils.data import random_split
 from data import Pest
 
 
-def all_dataset(ratio=(0.8, 0.1, 0.1)):
+def all_dataset(img_size, ratio=(0.8, 0.1, 0.1)):
     """
     return train_dataset, val_dataset, test_dataset according to ratio
+    :param img_size: image size of model input
     :param ratio: ratio of train_data, val_data, test_data
     :return:
     """
-    dataset_ = Pest.dataset()
+    p = Pest(img_size=img_size)
+    dataset_ = p.dataset()
     num_samples = len(dataset_)
     n_train = int(num_samples * ratio[0])
     n_val = int(num_samples * ratio[1])

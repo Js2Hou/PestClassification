@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-@Time ： 2021/6/30 20:05
+@Time ： 2021/7/6 15:42
 @Auth ： JsHou
 @Email : 137073284@qq.com
-@File ：_resnet50.py
+@File ：_easy_cnn.py
 
 """
 
@@ -11,36 +11,26 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from torchvision.models import resnet50
 from torch.nn import functional as F
 from torchsummary import summary
 
 from load_data import all_dataset
 
 
-class ResNet50(pl.LightningModule):
-    def __init__(self, n_classes=3, learning_rate: float = 0.0002, batch_size: int = 64, **kwargs):
+class EasyCNN(pl.LightningModule):
+    def __init__(self, n_classes=3, learning_rate: float = 0.0002, batch_size: int = 256, **kwargs):
         super().__init__(**kwargs)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.train_dataset, self.val_dataset, self.test_dataset = all_dataset(img_size=(224, 224))
+        self.train_dataset, self.val_dataset, self.test_dataset = all_dataset(img_size=(100, 100))
 
-        # init a pretrained resnet
-        backbone = resnet50(pretrained=True)
-        num_filters = backbone.fc.in_features
-        layers = list(backbone.children())[:-1]
-        self.feature_extractor = nn.Sequential(*layers)
-
-        # use the pretrained model to classify cifar-10 (10 image classes)
-        num_target_classes = n_classes
-        self.classifier = nn.Sequential(nn.Linear(num_filters, num_target_classes), nn.Softmax(dim=1))
+        # build classification model
+        self.net = nn.Sequential(nn.Conv2d(3, 64, kernel_size=5, padding=2), nn.MaxPool2d(2), nn.ReLU(),
+                                 nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.MaxPool2d(2), nn.ReLU(), nn.Flatten(),
+                                 nn.Linear(128 * 25 * 25, 120), nn.ReLU(), nn.Linear(120, n_classes), nn.Softmax())
 
     def forward(self, x):
-        self.feature_extractor.eval()
-        with torch.no_grad():
-            representations = self.feature_extractor(x).flatten(1)
-        x = self.classifier(representations)
-        return x
+        return self.net(x)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -55,28 +45,22 @@ class ResNet50(pl.LightningModule):
         acc = torch.sum(y == labels_hat).item() / (len(y) * 1.0)
 
         self.log_dict({'train_loss': loss, 'train_acc': acc})
-        print(f'train_loss: {loss}, train_acc: {acc}')
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y)
-        # calculate acc
         labels_hat = torch.argmax(y_hat, dim=1)
         acc = torch.sum(y == labels_hat).item() / (len(y) * 1.0)
-        # log the outputs
         self.log_dict({'val_loss': loss, 'val_acc': acc})
-        print(f'val_loss: {loss}, val_acc: {acc}')
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y)
-        # calculate accuracy
         labels_hat = torch.argmax(y_hat, dim=1)
         acc = torch.sum(y == labels_hat).item() / (len(y) * 1.0)
-        # print(f'test acc: {acc}')
         self.log_dict({'test_loss': loss, 'test_acc': acc})
         return loss
 
@@ -100,5 +84,5 @@ class ResNet50(pl.LightningModule):
 
 
 if __name__ == '__main__':
-    model = ResNet50(n_classes=3)
-    print(summary(model, (3, 224, 224)))
+    model = EasyCNN(n_classes=3)
+    print(summary(model, (3, 100, 100)))

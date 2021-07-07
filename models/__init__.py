@@ -8,5 +8,6 @@
 """
 
 from ._resnet50 import ResNet50
+from ._easy_cnn import EasyCNN
 
-__all__ = ['ResNet50']
+__all__ = ['ResNet50', 'EasyCNN']
