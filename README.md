@@ -1,6 +1,6 @@
 # Image recognition of leaf vegetable pests and diseases
 
-This is the baseline project for Image recognition of leaf vegetable pests and diseases.
+This is the baseline solution for [Image recognition of leaf vegetable pests and diseases](http://challenge.xfyun.cn/topic/info?type=pests-diseases).
 
 ## Fast to start
 
